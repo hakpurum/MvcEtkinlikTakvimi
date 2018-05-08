@@ -1,0 +1,104 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="row">
+    <div style="overflow:hidden;">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-4">
+                    <div id="eventListDemo"></div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+@section scripts{
+    <script type="text/javascript">
+        //Seçili olan tarih
+        var selectedDate = null;
+        //Etkinlik listesi
+        var events = [];
+
+        //Db den etkinlik listesi json olarak getirilir ve events değişkenine set edilir
+        $.getJSON("/Home/GetEvents", null,
+            function (data) {
+                events = data;
+            }
+        );
+
+        $(function () {
+            //Takvim bind edilir.
+            $('#eventListDemo').datetimepicker({
+                inline: true,
+                sideBySide: false,
+                showTodayButton: false,
+                format: 'DD/MM/YYYY',
+                locale: 'tr',
+                tooltips: {
+                    today: 'today',
+                    clear: 'clear',
+                    close: 'close'
+                },
+            });
+
+            //Ay/Yıl değiştirildiğinde takimde belirtilecek etkinlikler tekrardan render edilir
+            $('[data-action]').bind('click', function (e) {
+                eventDays();
+            });
+
+            //Takvimde ki günlere tıklandığında takvim kendini tekrar otomatik render edeceği için etkinliklerin kaybolmaması açısından
+            //tekrardan etkinlikler doldurulur.
+            $('#eventListDemo').on('dp.change', function (e) {
+                eventDays();
+            });
+
+            //Db deki etkinlikler getirilir.
+            eventDays();
+        });
+
+        //Db deki etkinlikler getirilir.
+        function eventDays() {
+            setTimeout(function () {
+                $(".day").each(function (index, element) {
+                    var isEvent = events.filter(f => f.EventDate === element.getAttribute("data-day"));
+                    if (isEvent.length > 0) {
+                        $(element).addClass("eventDay");
+                    }
+                });
+                dayHover();
+                tooltipBind();
+            }, 50);
+        }
+
+        //Etkinliğin üzerine geldiğinde popup olarak gösterilmesi için qtip2 kütüphanesi kullanılarak detayların gösterilmesi sağlanır.
+        function tooltipBind() {
+            $('.eventDay').qtip({
+                content: {
+                    text: function () {
+                        var detail = events.filter(f => f.EventDate === selectedDate)[0];
+                        return detail.EventDetail;
+                    },
+                    title: function () {
+                        var detail = events.filter(f => f.EventDate === selectedDate)[0];
+                        return detail.EventTitle;
+                    },
+                    button: 'Close'
+                }
+            });
+        }
+
+        //Mouse ile üzerine geldiğinde o anki tarih alınır ve selectedDate değişkenine set edilir
+        function dayHover() {
+            $(".day").hover(function () {
+                selectedDate = $(this).attr("data-day");
+            }, function () {
+                selectedDate = null;
+            });
+        }
+
+</script>
+
+}
